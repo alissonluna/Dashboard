@@ -449,18 +449,16 @@ const SHEET_URL = "https://script.google.com/macros/s/AKfycbxPjyrdKH8nSvolNxBpxx
 
 async function saveResponse(){
   try{
-    const payload = {
+    const params = new URLSearchParams({
       nome: userName,
       whatsapp: userWhats,
       email: userEmail,
       score: lastPct,
       nivel: lastTier
-    };
-    await fetch(SHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
+    });
+    await fetch(`${SHEET_URL}?${params.toString()}`, {
+      method: 'GET',
+      mode: 'no-cors'
     });
   } catch(err){
     console.error('Erro ao salvar resposta:', err);
