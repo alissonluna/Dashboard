@@ -357,14 +357,6 @@ input::placeholder{
     <div class="brand-footer">Diagnóstico by <span>Alisson Luna</span></div>
   </div>
 
-  <!-- ADMIN (acesso via ?admin=alisson na URL) -->
-  <div class="screen" id="screen-admin">
-    <div class="eyebrow">Área restrita</div>
-    <h1>Respostas recebidas</h1>
-    <p class="subtitle" id="admin-status">Carregando respostas...</p>
-    <div id="admin-list"></div>
-  </div>
-
 </div>
 
 <script>
@@ -452,18 +444,24 @@ let userEmail = "";
 let lastTier = "";
 let lastPct = 0;
 
+// URL do seu Google Apps Script (planilha de respostas)
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxPjyrdKH8nSvolNxBpxxQ1juGIoDwDrNn_lqd9gHIeeiPkaYQsVcVESuR-0mEsweV-/exec";
+
 async function saveResponse(){
   try{
-    const key = `resposta:${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
     const payload = {
       nome: userName,
       whatsapp: userWhats,
       email: userEmail,
       score: lastPct,
-      nivel: lastTier,
-      data: new Date().toISOString()
+      nivel: lastTier
     };
-    await window.storage.set(key, JSON.stringify(payload), true);
+    await fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
   } catch(err){
     console.error('Erro ao salvar resposta:', err);
   }
@@ -541,57 +539,6 @@ function finishQuiz(){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-thanks').classList.add('active');
 }
-
-// ===== ADMIN VIEW =====
-// Acesse enviando ?admin=alisson no final do link deste artefato para ver todas as respostas salvas.
-async function initAdmin(){
-  const params = new URLSearchParams(window.location.search);
-  if(params.get('admin') !== 'alisson') return;
-
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-admin').classList.add('active');
-
-  const statusEl = document.getElementById('admin-status');
-  const listEl = document.getElementById('admin-list');
-
-  try{
-    const listResult = await window.storage.list('resposta:', true);
-    const keys = (listResult && listResult.keys) || [];
-
-    if(keys.length === 0){
-      statusEl.textContent = 'Nenhuma resposta recebida ainda.';
-      return;
-    }
-
-    const responses = [];
-    for(const key of keys){
-      try{
-        const item = await window.storage.get(key, true);
-        if(item && item.value){
-          responses.push(JSON.parse(item.value));
-        }
-      } catch(e){
-        // chave sem valor válido, ignora
-      }
-    }
-
-    responses.sort((a, b) => new Date(b.data) - new Date(a.data));
-    statusEl.textContent = `${responses.length} resposta(s) recebida(s)`;
-
-    listEl.innerHTML = responses.map(r => `
-      <div class="admin-row">
-        <div class="row-top"><span>${r.nome || '—'}</span><span class="row-tier">${r.score}%</span></div>
-        <div class="row-meta">${r.whatsapp || 'sem whatsapp'} · ${r.email || 'sem e-mail'}</div>
-        <div class="row-meta">${r.nivel || ''} · ${new Date(r.data).toLocaleString('pt-BR')}</div>
-      </div>
-    `).join('');
-  } catch(err){
-    statusEl.textContent = 'Erro ao carregar respostas.';
-    console.error(err);
-  }
-}
-
-initAdmin();
 </script>
 
 </body>
