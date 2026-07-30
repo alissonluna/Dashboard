@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico de Tráfego Pago</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#0a0a0b;
+  --bg-2:#151416;
+  --gold:#c9a24b;
+  --gold-light:#e6cd8a;
+  --off:#f3efe6;
+  --muted:#8c8880;
+  --line:rgba(243,239,230,0.1);
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+
+body{
+  background:var(--bg);
+  color:var(--off);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  -webkit-font-smoothing:antialiased;
+}
+
+.card{
+  width:100%;
+  max-width:560px;
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:48px 40px;
+  position:relative;
+  overflow:hidden;
+}
+
+.card::before{
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0;
+  height:2px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* Moon phase progress */
+.moon-track{
+  display:flex;
+  gap:10px;
+  justify-content:center;
+  margin-bottom:32px;
+}
+.moon{
+  width:20px; height:20px;
+  border-radius:50%;
+  position:relative;
+  overflow:hidden;
+  background:rgba(243,239,230,0.08);
+  border:1px solid var(--line);
+  transition:all .4s ease;
+}
+.moon.filled{
+  background:var(--gold);
+  border-color:var(--gold);
+  box-shadow:0 0 12px rgba(201,162,75,0.5);
+}
+.moon.current{
+  border-color:var(--gold-light);
+}
+
+.eyebrow{
+  font-size:11px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--gold);
+  text-align:center;
+  margin-bottom:12px;
+  font-weight:600;
+}
+
+h1{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:28px;
+  line-height:1.25;
+  text-align:center;
+  margin-bottom:16px;
+  color:var(--off);
+}
+
+.subtitle{
+  text-align:center;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.6;
+  margin-bottom:32px;
+}
+
+.question-text{
+  font-family:'Fraunces',serif;
+  font-size:22px;
+  font-weight:600;
+  line-height:1.35;
+  margin-bottom:28px;
+  text-align:center;
+}
+
+.options{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.option{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--off);
+  padding:16px 18px;
+  border-radius:3px;
+  text-align:left;
+  font-family:'Inter',sans-serif;
+  font-size:15px;
+  cursor:pointer;
+  transition:all .2s ease;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.option:hover{
+  border-color:var(--gold);
+  background:rgba(201,162,75,0.06);
+}
+
+.option .marker{
+  width:6px; height:6px;
+  border-radius:50%;
+  background:var(--muted);
+  flex-shrink:0;
+  transition:background .2s ease;
+}
+
+.option:hover .marker{
+  background:var(--gold);
+}
+
+.btn-primary{
+  width:100%;
+  background:var(--gold);
+  color:var(--bg);
+  border:none;
+  padding:16px;
+  border-radius:3px;
+  font-family:'Inter',sans-serif;
+  font-weight:600;
+  font-size:15px;
+  cursor:pointer;
+  transition:all .2s ease;
+  letter-spacing:0.01em;
+}
+
+.btn-primary:hover{
+  background:var(--gold-light);
+}
+
+.btn-secondary{
+  width:100%;
+  background:transparent;
+  color:var(--muted);
+  border:none;
+  padding:10px;
+  font-size:13px;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+input[type="text"], input[type="tel"], input[type="email"]{
+  width:100%;
+  background:rgba(243,239,230,0.04);
+  border:1px solid var(--line);
+  color:var(--off);
+  padding:14px 16px;
+  border-radius:3px;
+  font-family:'Inter',sans-serif;
+  font-size:15px;
+  margin-bottom:14px;
+  outline:none;
+  transition:border-color .2s ease;
+}
+
+input:focus{
+  border-color:var(--gold);
+}
+
+input::placeholder{
+  color:var(--muted);
+}
+
+.screen{
+  display:none;
+}
+.screen.active{
+  display:block;
+  animation:fadeIn .35s ease;
+}
+
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(8px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+.result-badge{
+  display:inline-block;
+  font-family:'Fraunces',serif;
+  font-size:13px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--gold);
+  border:1px solid var(--gold);
+  padding:6px 14px;
+  border-radius:20px;
+  margin:0 auto 20px;
+  display:table;
+}
+
+.result-text{
+  color:var(--off);
+  font-size:15px;
+  line-height:1.7;
+  margin-bottom:24px;
+}
+
+.result-text strong{
+  color:var(--gold-light);
+}
+
+.score-bar-wrap{
+  margin:24px 0 32px;
+}
+.score-bar-label{
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:8px;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+}
+.score-bar{
+  height:6px;
+  background:rgba(243,239,230,0.08);
+  border-radius:3px;
+  overflow:hidden;
+}
+.score-fill{
+  height:100%;
+  background:linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius:3px;
+  transition:width 1s ease;
+  width:0%;
+}
+
+.brand-footer{
+  text-align:center;
+  margin-top:32px;
+  font-size:11px;
+  color:var(--muted);
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+}
+.brand-footer span{
+  color:var(--gold);
+}
+
+.admin-row{
+  border:1px solid var(--line);
+  border-radius:3px;
+  padding:14px 16px;
+  margin-bottom:10px;
+  font-size:13px;
+  line-height:1.6;
+}
+.admin-row .row-top{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:4px;
+  font-family:'Fraunces',serif;
+  font-size:15px;
+  font-weight:600;
+  color:var(--gold-light);
+}
+.admin-row .row-meta{
+  color:var(--muted);
+}
+.admin-row .row-tier{
+  color:var(--gold);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+}
+#screen-admin .card, #screen-admin{
+  text-align:left;
+}
+#screen-admin h1, #screen-admin .eyebrow, #screen-admin .subtitle{
+  text-align:center;
+}
+
+@media (max-width:480px){
+  .card{padding:36px 24px;}
+  h1{font-size:23px;}
+  .question-text{font-size:19px;}
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- INTRO -->
+  <div class="screen active" id="screen-intro">
+    <div class="eyebrow">Diagnóstico Rápido · 2 minutos</div>
+    <h1>Seu negócio está pronto para escalar com tráfego pago?</h1>
+    <p class="subtitle">Responda 7 perguntas com sinceridade. Quero te conhecer melhor para entregar o melhor possível para você na aula de mentoria.</p>
+    <button class="btn-primary" onclick="goTo('q1')">Começar diagnóstico</button>
+  </div>
+
+  <!-- QUESTIONS render dynamically here -->
+  <div class="screen" id="screen-question">
+    <div class="moon-track" id="moon-track"></div>
+    <div class="question-text" id="question-text"></div>
+    <div class="options" id="question-options"></div>
+  </div>
+
+  <!-- LEAD CAPTURE -->
+  <div class="screen" id="screen-capture">
+    <div class="eyebrow">Quase lá</div>
+    <h1>Só mais um passo</h1>
+    <p class="subtitle">Deixe seus dados para finalizar o diagnóstico.</p>
+    <input type="text" id="input-nome" placeholder="Seu nome">
+    <input type="tel" id="input-whats" placeholder="Seu WhatsApp (com DDD)">
+    <input type="email" id="input-email" placeholder="Seu e-mail">
+    <button class="btn-primary" onclick="finishQuiz()">Finalizar</button>
+  </div>
+
+  <!-- THANK YOU -->
+  <div class="screen" id="screen-thanks">
+    <div class="eyebrow">Diagnóstico concluído</div>
+    <h1 id="thanks-title">Obrigado! 🌙</h1>
+    <p class="subtitle" id="thanks-text">Recebemos suas respostas. Nos vemos na aula!</p>
+    <div class="brand-footer">Diagnóstico by <span>Alisson Luna</span></div>
+  </div>
+
+  <!-- ADMIN (acesso via ?admin=alisson na URL) -->
+  <div class="screen" id="screen-admin">
+    <div class="eyebrow">Área restrita</div>
+    <h1>Respostas recebidas</h1>
+    <p class="subtitle" id="admin-status">Carregando respostas...</p>
+    <div id="admin-list"></div>
+  </div>
+
+</div>
+
+<script>
+// ===== QUESTIONS =====
+const questions = [
+  {
+    text: "Hoje, você investe em tráfego pago para o seu negócio?",
+    options: [
+      { label: "Nunca investi", points: 0 },
+      { label: "Já investi, mas parei", points: 1 },
+      { label: "Invisto às vezes", points: 2 },
+      { label: "Invisto todos os meses", points: 4 }
+    ]
+  },
+  {
+    text: "Quanto você investe, em média, por mês em anúncios?",
+    options: [
+      { label: "Até R$ 500", points: 0 },
+      { label: "R$ 500 a R$ 2.000", points: 1 },
+      { label: "R$ 2.000 a R$ 5.000", points: 2 },
+      { label: "R$ 5.000 a R$ 10.000", points: 3 },
+      { label: "Acima de R$ 10.000", points: 4 }
+    ]
+  },
+  {
+    text: "Quem cuida do seu tráfego pago hoje?",
+    options: [
+      { label: "Ninguém", points: 0 },
+      { label: "Eu mesmo", points: 1 },
+      { label: "Um funcionário", points: 2 },
+      { label: "Freelancer/gestor de tráfego", points: 3 },
+      { label: "Agência", points: 4 }
+    ]
+  },
+  {
+    text: "Você sabe exatamente quanto retorna para cada R$ 1 investido em anúncios?",
+    options: [
+      { label: "Não faço ideia", points: 0 },
+      { label: "Tenho uma noção", points: 1 },
+      { label: "Acompanho algumas métricas", points: 3 },
+      { label: "Sim, acompanho ROI/ROAS e vendas", points: 4 }
+    ]
+  },
+  {
+    text: "Qual é o principal objetivo dos seus anúncios hoje?",
+    options: [
+      { label: "Ganhar seguidores/visualizações", points: 0 },
+      { label: "Gerar mensagens no WhatsApp/Direct", points: 1 },
+      { label: "Gerar leads", points: 2 },
+      { label: "Vender diretamente", points: 3 },
+      { label: "Criar um processo previsível de aquisição", points: 4 }
+    ]
+  },
+  {
+    text: "Qual dessas situações mais representa seu negócio?",
+    options: [
+      { label: "Ainda dependo muito de indicação", points: 0 },
+      { label: "Faço anúncios, mas não tenho previsibilidade", points: 1 },
+      { label: "Tenho leads, mas tenho dificuldade para convertê-los", points: 2 },
+      { label: "Tenho um processo que gera leads e vendas constantemente", points: 3 },
+      { label: "Já tenho previsibilidade e quero escalar", points: 4 }
+    ]
+  },
+  {
+    text: "Se você descobrisse que cada R$ 1 investido gera R$ 3 em vendas de forma previsível, quanto estaria disposto a investir por mês?",
+    weight: 2,
+    options: [
+      { label: "Até R$ 1.000", points: 0 },
+      { label: "R$ 1.000 a R$ 3.000", points: 1 },
+      { label: "R$ 3.000 a R$ 10.000", points: 2 },
+      { label: "R$ 10.000 a R$ 30.000", points: 3 },
+      { label: "O máximo que o negócio conseguir suportar", points: 4 }
+    ]
+  }
+];
+
+let currentQ = 0;
+let totalScore = 0;
+let maxScore = 0;
+questions.forEach(q => { maxScore += 4 * (q.weight || 1); });
+
+let userName = "";
+let userWhats = "";
+let userEmail = "";
+let lastTier = "";
+let lastPct = 0;
+
+async function saveResponse(){
+  try{
+    const key = `resposta:${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const payload = {
+      nome: userName,
+      whatsapp: userWhats,
+      email: userEmail,
+      score: lastPct,
+      nivel: lastTier,
+      data: new Date().toISOString()
+    };
+    await window.storage.set(key, JSON.stringify(payload), true);
+  } catch(err){
+    console.error('Erro ao salvar resposta:', err);
+  }
+}
+
+function goTo(target){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  if(target === 'q1'){
+    currentQ = 0;
+    renderQuestion();
+    document.getElementById('screen-question').classList.add('active');
+  }
+}
+
+function renderMoonTrack(){
+  const track = document.getElementById('moon-track');
+  track.innerHTML = '';
+  questions.forEach((q, i) => {
+    const m = document.createElement('div');
+    m.className = 'moon';
+    if(i < currentQ) m.classList.add('filled');
+    if(i === currentQ) m.classList.add('current');
+    track.appendChild(m);
+  });
+}
+
+function renderQuestion(){
+  renderMoonTrack();
+  const q = questions[currentQ];
+  document.getElementById('question-text').textContent = q.text;
+  const optWrap = document.getElementById('question-options');
+  optWrap.innerHTML = '';
+  q.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.innerHTML = `<span class="marker"></span><span>${opt.label}</span>`;
+    btn.onclick = () => selectOption(opt.points, q.weight || 1);
+    optWrap.appendChild(btn);
+  });
+}
+
+function selectOption(points, weight){
+  totalScore += points * weight;
+  currentQ++;
+  if(currentQ < questions.length){
+    renderQuestion();
+  } else {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-capture').classList.add('active');
+  }
+}
+
+function finishQuiz(){
+  const nomeDigitado = document.getElementById('input-nome').value.trim();
+  userName = nomeDigitado || "";
+  userWhats = document.getElementById('input-whats').value.trim();
+  userEmail = document.getElementById('input-email').value.trim();
+
+  const pct = Math.round((totalScore / maxScore) * 100);
+  lastPct = pct;
+
+  if(pct < 25){
+    lastTier = "Nível 1 · Iniciante";
+  } else if(pct < 50){
+    lastTier = "Nível 2 · Em desenvolvimento";
+  } else if(pct < 75){
+    lastTier = "Nível 3 · Investidor consciente";
+  } else {
+    lastTier = "Nível 4 · Pronto para escalar";
+  }
+
+  saveResponse();
+
+  document.getElementById('thanks-title').textContent = userName ? `Obrigado, ${userName}! 🌙` : `Obrigado! 🌙`;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-thanks').classList.add('active');
+}
+
+// ===== ADMIN VIEW =====
+// Acesse enviando ?admin=alisson no final do link deste artefato para ver todas as respostas salvas.
+async function initAdmin(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('admin') !== 'alisson') return;
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-admin').classList.add('active');
+
+  const statusEl = document.getElementById('admin-status');
+  const listEl = document.getElementById('admin-list');
+
+  try{
+    const listResult = await window.storage.list('resposta:', true);
+    const keys = (listResult && listResult.keys) || [];
+
+    if(keys.length === 0){
+      statusEl.textContent = 'Nenhuma resposta recebida ainda.';
+      return;
+    }
+
+    const responses = [];
+    for(const key of keys){
+      try{
+        const item = await window.storage.get(key, true);
+        if(item && item.value){
+          responses.push(JSON.parse(item.value));
+        }
+      } catch(e){
+        // chave sem valor válido, ignora
+      }
+    }
+
+    responses.sort((a, b) => new Date(b.data) - new Date(a.data));
+    statusEl.textContent = `${responses.length} resposta(s) recebida(s)`;
+
+    listEl.innerHTML = responses.map(r => `
+      <div class="admin-row">
+        <div class="row-top"><span>${r.nome || '—'}</span><span class="row-tier">${r.score}%</span></div>
+        <div class="row-meta">${r.whatsapp || 'sem whatsapp'} · ${r.email || 'sem e-mail'}</div>
+        <div class="row-meta">${r.nivel || ''} · ${new Date(r.data).toLocaleString('pt-BR')}</div>
+      </div>
+    `).join('');
+  } catch(err){
+    statusEl.textContent = 'Erro ao carregar respostas.';
+    console.error(err);
+  }
+}
+
+initAdmin();
+</script>
+
+</body>
+</html>
